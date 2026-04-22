@@ -7,14 +7,14 @@ const { autoUpdater } = electronUpdater
 // For development testing
 // autoUpdater.forceDevUpdateConfig = true
 // autoUpdater.setFeedURL({
-// 	provider: 'generic',
-// 	publishAutoUpdate: false,
-// 	url: 'https://api-staging.bitfocus.io/v1/product/electron-updater/companion-satellite',
+// 	provider: 'github',
+// 	owner: 'fbcgulfport',
+// 	repo: 'companion-midi-satellite',
 // })
 
 const require = createRequire(import.meta.url)
 const pkgJson = require('../package.json')
-const updateChannel: string | undefined = app.isPackaged ? pkgJson.updateChannel : 'beta'
+const updateChannel: string | undefined = app.isPackaged ? pkgJson.updateChannel : undefined
 
 // Configure the updater
 autoUpdater.autoDownload = false

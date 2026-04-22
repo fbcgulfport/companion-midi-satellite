@@ -17,7 +17,7 @@ const appConfig = openHeadlessConfig(configFilePath)
 chown(appConfig.path, 1000, 1000).catch(() => null)
 
 const templatePathName = fileURLToPath(
-	new URL('/usr/local/src/companion-satellite/pi-image/satellite-config', import.meta.url),
+	new URL('/usr/local/src/companion-midi-satellite/pi-image/satellite-config', import.meta.url),
 )
 
 const importFromPaths = ['/boot/satellite-config', '/boot/firmware/satellite-config', '/satellite-config']
