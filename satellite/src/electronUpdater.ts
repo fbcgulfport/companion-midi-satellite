@@ -20,7 +20,7 @@ const updateChannel: string | undefined = app.isPackaged ? pkgJson.updateChannel
 autoUpdater.autoDownload = false
 autoUpdater.autoInstallOnAppQuit = true
 autoUpdater.autoRunAppAfterInstall = true
-autoUpdater.requestHeaders = { 'User-Agent': `Companion Satellite v${autoUpdater.currentVersion}` }
+autoUpdater.requestHeaders = { 'User-Agent': `Companion MIDI Satellite v${autoUpdater.currentVersion}` }
 autoUpdater.channel = updateChannel ?? '' // TODO - this will likely want to vary for each macos arch..
 
 export function isUpdateSupported(): boolean {
@@ -70,7 +70,7 @@ export class ElectronUpdater {
 					if (info.isUpdateAvailable) {
 						dialog
 							.showMessageBox({
-								title: 'Companion Satellite',
+								title: 'Companion MIDI Satellite',
 								message: `Version ${info.updateInfo.version} is available`,
 								buttons: ['Install', 'Cancel'],
 							})
@@ -85,7 +85,7 @@ export class ElectronUpdater {
 					} else {
 						dialog
 							.showMessageBox({
-								title: 'Companion Satellite',
+								title: 'Companion MIDI Satellite',
 								message: 'No update is available',
 								buttons: ['Close'],
 							})

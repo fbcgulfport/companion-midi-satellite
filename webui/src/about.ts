@@ -1,21 +1,23 @@
-declare const aboutApi: typeof import('../../satellite/dist/aboutPreload.cjs').aboutApi
+declare const aboutApi: {
+	getVersion: () => Promise<string>
+	openShell: (url: string) => Promise<void>
+}
 
 const bug_report = document.querySelector('.bug-report-link') as HTMLDivElement
-bug_report.addEventListener('click', (e) => {
-	e.preventDefault()
-	aboutApi.openShell('https://github.com/bitfocus/companion-satellite/issues').catch((e) => {
-		console.error('failed to open bug report url', e)
+bug_report.addEventListener('click', (event: MouseEvent) => {
+	event.preventDefault()
+	aboutApi.openShell('https://github.com/fbcgulfport/companion-midi-satellite/issues').catch((error: unknown) => {
+		console.error('failed to open bug report url', error)
 	})
 })
 
 const open_home = () => {
-	aboutApi.openShell('https://github.com/bitfocus/companion-satellite').catch((e) => {
-		console.error('failed to open homepage url', e)
+	aboutApi.openShell('https://github.com/fbcgulfport/companion-midi-satellite').catch((error: unknown) => {
+		console.error('failed to open homepage url', error)
 	})
 }
 
 const title_elem = document.querySelector('.title') as HTMLHeadingElement
-// title_elem.innerText += ` ${version}`
 
 title_elem.addEventListener('click', open_home)
 title_elem.classList.add('clickable')
@@ -28,10 +30,9 @@ yearElm.innerText = new Date().getFullYear().toString()
 
 aboutApi
 	.getVersion()
-	.then((version) => {
-		console.log('eaa', version)
+	.then((version: string) => {
 		title_elem.innerText += ` ${version}`
 	})
-	.catch((e) => {
-		console.error('failed to get version', e)
+	.catch((error: unknown) => {
+		console.error('failed to get version', error)
 	})

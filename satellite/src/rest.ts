@@ -4,45 +4,26 @@ import { koaBody } from 'koa-body'
 import serve from 'koa-static'
 import http from 'http'
 import type Conf from 'conf'
-import type { CompanionSatelliteClient } from './client/client.js'
-import type { SurfaceManager } from './surface-manager.js'
 import type { SatelliteConfig } from './config.js'
-import {
-	ApiConfigData,
-	ApiConfigDataUpdate,
-	ApiConfigDataUpdateElectron,
-	ApiSurfaceInfo,
-	ApiSurfacePluginInfo,
-	ApiSurfacePluginsEnabled,
-	compileConfig,
-	compileStatus,
-	updateConfig,
-	updateSurfacePluginsEnabledConfig,
-} from './apiTypes.js'
+import { ApiConfigData, ApiConfigDataUpdate, compileConfig, compileStatus, updateConfig } from './apiTypes.js'
 import { createLogger } from './logging.js'
 import type { JsonValue } from 'type-fest'
+import type { MidiButtonPusher } from './midi-button-pusher.js'
+import { getMidiPusherConfig } from './config.js'
 
 export class RestServer {
 	readonly #logger = createLogger('RestServer')
 
 	private readonly appConfig: Conf<SatelliteConfig>
-	private readonly client: CompanionSatelliteClient
-	private readonly surfaceManager: SurfaceManager
+	private readonly midiPusher: MidiButtonPusher
 	private readonly app: Koa
 	private readonly router: Router
 	private server: http.Server | undefined
 
-	constructor(
-		webRoot: string,
-		appConfig: Conf<SatelliteConfig>,
-		client: CompanionSatelliteClient,
-		surfaceManager: SurfaceManager,
-	) {
+	constructor(webRoot: string, appConfig: Conf<SatelliteConfig>, midiPusher: MidiButtonPusher) {
 		this.appConfig = appConfig
-		this.client = client
-		this.surfaceManager = surfaceManager
+		this.midiPusher = midiPusher
 
-		// Monitor for config changes
 		this.appConfig.onDidChange('restEnabled', this.open.bind(this))
 		this.appConfig.onDidChange('restPort', this.open.bind(this))
 
@@ -51,166 +32,111 @@ export class RestServer {
 
 		this.router = new Router()
 
-		//GET
-		this.router.get('/api/host', async (ctx) => {
-			ctx.body = this.appConfig.get('remoteIp')
-		})
-		this.router.get('/api/port', (ctx) => {
-			ctx.body = this.appConfig.get('remotePort')
-		})
-		this.router.get('/api/connected', (ctx) => {
-			ctx.body = this.client.connected
-		})
 		this.router.get('/api/config', (ctx) => {
 			ctx.body = compileConfig(this.appConfig)
 		})
 		this.router.get('/api/status', (ctx) => {
-			ctx.body = compileStatus(this.client)
+			ctx.body = compileStatus(this.appConfig, this.midiPusher)
+		})
+		this.router.get('/api/midi/ports', (ctx) => {
+			ctx.body = this.midiPusher.listPorts()
 		})
 
-		//POST
-		this.router.post('/api/host', koaBody(), async (ctx) => {
-			let host: JsonValue | undefined
-			if (ctx.request.type == 'application/json' && bodyIsObject(ctx.request.body)) {
-				host = ctx.request.body?.['host']
-			} else if (ctx.request.type == 'text/plain') {
-				host = ctx.request.body
-			}
+		this.router.get('/api/host', (ctx) => {
+			ctx.body = this.appConfig.get('companionHost')
+		})
+		this.router.get('/api/port', (ctx) => {
+			ctx.body = this.appConfig.get('companionPort')
+		})
 
-			if (host && typeof host === 'string') {
-				this.appConfig.set('remoteIp', host)
-
-				ctx.body = 'OK'
-			} else {
+		this.router.post('/api/config', koaBody(), (ctx) => {
+			if (ctx.request.type !== 'application/json' || !bodyIsObject(ctx.request.body)) {
 				ctx.status = 400
-				ctx.body = 'Invalid host'
-			}
-		})
-		this.router.post('/api/port', koaBody(), async (ctx) => {
-			let newPort = NaN
-			if (ctx.request.type == 'application/json' && bodyIsObject(ctx.request.body)) {
-				newPort = Number(ctx.request.body['port'])
-			} else if (ctx.request.type == 'text/plain') {
-				newPort = Number(ctx.request.body)
+				ctx.body = 'Invalid request'
+				return
 			}
 
-			if (!isNaN(newPort) && newPort > 0 && newPort <= 65535) {
-				this.appConfig.set('remotePOrt', newPort)
+			const body = ctx.request.body as Partial<ApiConfigData>
+			const partialConfig: ApiConfigDataUpdate = {}
 
-				ctx.body = 'OK'
-			} else {
-				ctx.status = 400
-				ctx.body = 'Invalid port'
-			}
-		})
-		this.router.post('/api/config', koaBody(), async (ctx) => {
-			if (ctx.request.type == 'application/json') {
-				const body = ctx.request.body as Partial<ApiConfigData>
-
-				const partialConfig: ApiConfigDataUpdate = {}
-
-				const protocol = body.protocol
-				if (protocol !== undefined) {
-					if (typeof protocol === 'string') {
-						partialConfig.protocol = protocol
-					} else {
-						ctx.status = 400
-						ctx.body = 'Invalid protocol'
-					}
-				}
-
-				const host = body.host
-				if (host !== undefined) {
-					if (typeof host === 'string') {
-						partialConfig.host = host
-					} else {
-						ctx.status = 400
-						ctx.body = 'Invalid host'
-					}
-				}
-
-				const port = Number(body.port)
-				if (isNaN(port) || port <= 0 || port > 65535) {
-					ctx.status = 400
-					ctx.body = 'Invalid port'
+			if (body.companionHost !== undefined) {
+				if (typeof body.companionHost === 'string') {
+					partialConfig.companionHost = body.companionHost
 				} else {
-					partialConfig.port = port
+					ctx.status = 400
+					ctx.body = 'Invalid companionHost'
+					return
 				}
-
-				const wsAddress = body.wsAddress
-				if (wsAddress !== undefined) {
-					if (typeof wsAddress === 'string') {
-						partialConfig.wsAddress = wsAddress
-					} else {
-						ctx.status = 400
-						ctx.body = 'Invalid wsAddress'
-					}
-				}
-
-				const installationName = body.installationName
-				if (installationName !== undefined) {
-					if (typeof installationName === 'string') {
-						partialConfig.installationName = installationName
-					} else {
-						ctx.status = 400
-						ctx.body = 'Invalid installationName'
-					}
-				}
-
-				const mdnsEnabled = body.mdnsEnabled
-				if (mdnsEnabled !== undefined) {
-					if (typeof mdnsEnabled === 'boolean') {
-						partialConfig.mdnsEnabled = mdnsEnabled
-					} else {
-						ctx.status = 400
-						ctx.body = 'Invalid mdnsEnabled'
-					}
-				}
-
-				// Ensure some fields cannot be changed
-				const tmpPartialConfig: ApiConfigDataUpdateElectron = partialConfig
-				delete tmpPartialConfig.httpEnabled
-				delete tmpPartialConfig.httpPort
-
-				updateConfig(this.appConfig, partialConfig)
-				ctx.body = compileConfig(this.appConfig)
-			}
-		})
-
-		this.router.post('/api/surfaces/rescan', async (ctx) => {
-			this.surfaceManager.scanForSurfaces()
-
-			ctx.body = 'OK'
-		})
-
-		this.router.get('/api/surfaces', async (ctx) => {
-			ctx.body = this.surfaceManager.getOpenSurfacesInfo() satisfies ApiSurfaceInfo[]
-		})
-
-		this.router.get('/api/surfaces/plugins/installed', async (ctx) => {
-			ctx.body = this.surfaceManager.getAvailablePluginsInfo() satisfies ApiSurfacePluginInfo[]
-		})
-
-		this.router.get('/api/surfaces/plugins/enabled', async (ctx) => {
-			ctx.body = this.appConfig.get('surfacePluginsEnabled') satisfies ApiSurfacePluginsEnabled
-		})
-		this.router.post('/api/surfaces/plugins/enabled', koaBody(), async (ctx) => {
-			if (ctx.request.type != 'application/json') {
-				ctx.status = 400
-				ctx.body = 'Invalid request'
-				return
 			}
 
-			if (typeof ctx.request.body !== 'object') {
-				ctx.status = 400
-				ctx.body = 'Invalid request'
-				return
+			if (body.companionPort !== undefined) {
+				const port = Number(body.companionPort)
+				if (isNaN(port) || port < 1 || port > 65535) {
+					ctx.status = 400
+					ctx.body = 'Invalid companionPort'
+					return
+				}
+				partialConfig.companionPort = port
 			}
 
-			const newConfig = ctx.request.body as ApiSurfacePluginsEnabled
-			updateSurfacePluginsEnabledConfig(this.appConfig, newConfig)
+			if (body.midiEnabled !== undefined) {
+				if (typeof body.midiEnabled !== 'boolean') {
+					ctx.status = 400
+					ctx.body = 'Invalid midiEnabled'
+					return
+				}
+				partialConfig.midiEnabled = body.midiEnabled
+			}
 
-			ctx.body = this.appConfig.get('surfacePluginsEnabled')
+			if (body.midiPortType !== undefined) {
+				if (body.midiPortType !== 'virtual' && body.midiPortType !== 'named') {
+					ctx.status = 400
+					ctx.body = 'Invalid midiPortType'
+					return
+				}
+				partialConfig.midiPortType = body.midiPortType
+			}
+
+			if (body.midiPortName !== undefined) {
+				if (typeof body.midiPortName !== 'string') {
+					ctx.status = 400
+					ctx.body = 'Invalid midiPortName'
+					return
+				}
+				partialConfig.midiPortName = body.midiPortName
+			}
+
+			if (body.runAtStartup !== undefined) {
+				if (typeof body.runAtStartup !== 'boolean') {
+					ctx.status = 400
+					ctx.body = 'Invalid runAtStartup'
+					return
+				}
+				partialConfig.runAtStartup = body.runAtStartup
+			}
+
+			if (body.httpEnabled !== undefined) {
+				if (typeof body.httpEnabled !== 'boolean') {
+					ctx.status = 400
+					ctx.body = 'Invalid httpEnabled'
+					return
+				}
+				partialConfig.httpEnabled = body.httpEnabled
+			}
+
+			if (body.httpPort !== undefined) {
+				const port = Number(body.httpPort)
+				if (isNaN(port) || port < 1 || port > 65535) {
+					ctx.status = 400
+					ctx.body = 'Invalid httpPort'
+					return
+				}
+				partialConfig.httpPort = port
+			}
+
+			updateConfig(this.appConfig, partialConfig)
+			this.midiPusher.applyConfig(getMidiPusherConfig(this.appConfig))
+			ctx.body = compileConfig(this.appConfig)
 		})
 
 		this.app.use(this.router.routes()).use(this.router.allowedMethods())
@@ -230,7 +156,7 @@ export class RestServer {
 				this.#logger.error(`Error starting REST server: ${error}`)
 			}
 		} else {
-			this.#logger.info('REST server not starting: port 0')
+			this.#logger.info('REST server not starting: disabled')
 		}
 	}
 
@@ -239,7 +165,7 @@ export class RestServer {
 			this.server.close()
 			this.server.closeAllConnections()
 			delete this.server
-			this.#logger.info('The rest server is closed')
+			this.#logger.info('REST server closed')
 		}
 	}
 }

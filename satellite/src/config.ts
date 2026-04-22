@@ -1,63 +1,59 @@
 import Conf, { Schema } from 'conf'
 import path from 'path'
-import os from 'os'
-import { customAlphabet } from 'nanoid'
-import { SomeConnectionDetails } from './client/socketImplementations.js'
-import { assertNever, DEFAULT_TCP_PORT, DEFAULT_WS_PORT } from './lib.js'
 import debounceFn from 'debounce-fn'
 import { setMaxListeners } from 'events'
-
-const nanoidHex = customAlphabet('0123456789abcdef')
+import type { MidiPusherConfig } from './midi-button-pusher.js'
 
 export type SatelliteConfigInstance = Conf<SatelliteConfig>
 
 export interface SatelliteConfig {
-	remoteProtocol: 'tcp' | 'ws'
-	remoteIp: string
-	remotePort: number
-	remoteWsAddress: string
+	companionHost: string
+	companionPort: number
 
-	installationName: string
+	midiEnabled: boolean
+	midiPortType: 'virtual' | 'named'
+	midiPortName: string
+
+	runAtStartup: boolean
 
 	restEnabled: boolean
 	restPort: number
-
-	mdnsEnabled: boolean
-
-	surfacePluginsEnabled: Record<string, boolean>
 }
 
 export const satelliteConfigSchema: Schema<SatelliteConfig> = {
-	remoteProtocol: {
-		type: 'string',
-		enum: ['tcp', 'ws'],
-		description: 'Protocol to use for connecting to Companion installation',
-		default: 'tcp',
-	},
-	remoteIp: {
+	companionHost: {
 		type: 'string',
 		description: 'Address of Companion installation',
 		default: '127.0.0.1',
 	},
-	remotePort: {
+	companionPort: {
 		type: 'integer',
-		description: 'Port number of Companion installation',
+		description: 'HTTP port number of Companion installation',
 		minimum: 1,
 		maximum: 65535,
-		default: DEFAULT_TCP_PORT,
+		default: 8000,
 	},
-	remoteWsAddress: {
+	midiEnabled: {
+		type: 'boolean',
+		description: 'Enable MIDI button pusher',
+		default: false,
+	},
+	midiPortType: {
 		type: 'string',
-		description: 'Websocket address of Companion installation',
-		default: `ws://127.0.0.1:${DEFAULT_WS_PORT}`,
+		enum: ['virtual', 'named'],
+		description: 'How MIDI input port is selected',
+		default: 'virtual',
 	},
-
-	installationName: {
+	midiPortName: {
 		type: 'string',
-		description: 'Name for this Satellite installation',
-		default: `Satellite ${os.hostname()} (${nanoidHex(8)})`,
+		description: 'Virtual port name or named MIDI input port',
+		default: 'CompanionMidiSatellite',
 	},
-
+	runAtStartup: {
+		type: 'boolean',
+		description: 'Run at OS login/startup',
+		default: false,
+	},
 	restEnabled: {
 		type: 'boolean',
 		description: 'Enable HTTP api',
@@ -70,51 +66,26 @@ export const satelliteConfigSchema: Schema<SatelliteConfig> = {
 		maximum: 65535,
 		default: 9999,
 	},
-	mdnsEnabled: {
-		type: 'boolean',
-		description: 'Enable mDNS announcement',
-		default: true,
-	},
-
-	surfacePluginsEnabled: {
-		type: 'object',
-		patternProperties: {
-			'': {
-				type: 'boolean',
-			},
-		},
-		description: 'Enabled Surface Plugins',
-		default: {
-			'elgato-stream-deck': true,
-			loupedeck: true,
-			'idisplay-infinitton': true,
-			'mirabox-stream-dock': true,
-		},
-	},
 }
 
 export function ensureFieldsPopulated(store: Conf<SatelliteConfig>): void {
-	// Note: This doesn't appear to do anything, as Conf is populated with defaults
 	for (const [key, schema] of Object.entries<any>(satelliteConfigSchema)) {
 		if (store.get(key) === undefined && schema.default !== undefined) {
-			// Ensure values are written to disk
 			store.set(key, schema.default)
 		}
 	}
 
-	// Translate renamed plugins
-	const enabledPlugins = store.get('surfacePluginsEnabled') ?? {}
-	const renamedIds: Record<string, string> = {
-		'elgato-streamdeck': 'elgato-stream-deck',
-		infinitton: 'idisplay-infinitton',
-	}
-	for (const [oldId, newId] of Object.entries(renamedIds)) {
-		if (enabledPlugins[newId] === undefined && enabledPlugins[oldId] !== undefined) {
-			store.set(`surfacePluginsEnabled.${newId}`, !!enabledPlugins[oldId])
-		}
+	const legacyHost = store.get('remoteIp' as never)
+	if (store.get('companionHost') === undefined && typeof legacyHost === 'string') {
+		store.set('companionHost', legacyHost)
 	}
 
-	// Ensure that the store with the filled in defaults is written to disk
+	const legacyPort = store.get('remotePort' as never)
+	if (store.get('companionPort') === undefined && typeof legacyPort === 'number') {
+		store.set('companionPort', legacyPort)
+	}
+
+	// Ensure defaults are written to disk
 	// eslint-disable-next-line no-self-assign
 	store.store = store.store
 }
@@ -125,7 +96,7 @@ export function openHeadlessConfig(rawConfigPath: string): Conf<SatelliteConfig>
 	const appConfig = new Conf<SatelliteConfig>({
 		schema: satelliteConfigSchema,
 		configName: path.parse(absoluteConfigPath).name,
-		projectName: 'companion-satellite',
+		projectName: 'companion-midi-satellite',
 		cwd: path.dirname(absoluteConfigPath),
 	})
 	setMaxListeners(0, appConfig.events)
@@ -134,35 +105,22 @@ export function openHeadlessConfig(rawConfigPath: string): Conf<SatelliteConfig>
 	return appConfig
 }
 
-export function getConnectionDetailsFromConfig(config: SatelliteConfigInstance): SomeConnectionDetails {
-	const protocol = config.get('remoteProtocol')
-	switch (protocol) {
-		case 'tcp':
-			return {
-				mode: 'tcp',
-				host: config.get('remoteIp') || '127.0.0.1',
-				port: config.get('remotePort') || DEFAULT_TCP_PORT,
-			}
-		case 'ws':
-			return {
-				mode: 'ws',
-				url: config.get('remoteWsAddress') || `ws://127.0.0.1:${DEFAULT_WS_PORT}`,
-			}
-		default:
-			assertNever(protocol)
-			return {
-				mode: 'tcp',
-				host: config.get('remoteIp'),
-				port: config.get('remotePort'),
-			}
+export function getMidiPusherConfig(config: SatelliteConfigInstance): MidiPusherConfig {
+	return {
+		companionHost: config.get('companionHost') || '127.0.0.1',
+		companionPort: config.get('companionPort') || 8000,
+		midiEnabled: config.get('midiEnabled') || false,
+		midiPortType: config.get('midiPortType') || 'virtual',
+		midiPortName: config.get('midiPortName') || 'CompanionMidiSatellite',
 	}
 }
 
-export function listenToConnectionConfigChanges(config: SatelliteConfigInstance, tryConnect: () => void): void {
-	const debounceConnect = debounceFn(tryConnect, { wait: 50, after: true, before: false })
+export function listenToMidiConfigChanges(config: SatelliteConfigInstance, reload: () => void): void {
+	const debouncedReload = debounceFn(reload, { wait: 50, after: true, before: false })
 
-	config.onDidChange('remoteProtocol', debounceConnect)
-	config.onDidChange('remoteIp', debounceConnect)
-	config.onDidChange('remotePort', debounceConnect)
-	config.onDidChange('remoteWsAddress', debounceConnect)
+	config.onDidChange('companionHost', debouncedReload)
+	config.onDidChange('companionPort', debouncedReload)
+	config.onDidChange('midiEnabled', debouncedReload)
+	config.onDidChange('midiPortType', debouncedReload)
+	config.onDidChange('midiPortName', debouncedReload)
 }

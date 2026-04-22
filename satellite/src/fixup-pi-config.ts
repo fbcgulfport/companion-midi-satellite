@@ -20,13 +20,7 @@ const templatePathName = fileURLToPath(
 	new URL('/usr/local/src/companion-satellite/pi-image/satellite-config', import.meta.url),
 )
 
-const importFromPaths = [
-	// Paths to search for a config file to 'import' from
-	'/boot/satellite-config',
-	'/boot/firmware/satellite-config',
-	'/satellite-config',
-	// templatePathName, // For testing
-]
+const importFromPaths = ['/boot/satellite-config', '/boot/firmware/satellite-config', '/satellite-config']
 
 Promise.resolve()
 	.then(async () => {
@@ -43,7 +37,6 @@ Promise.resolve()
 				for (let line of lines) {
 					line = line.trim()
 
-					// Ignore any comments
 					if (line.startsWith('#')) continue
 
 					const splitIndex = line.indexOf('=')
@@ -54,7 +47,7 @@ Promise.resolve()
 
 					switch (key.toUpperCase()) {
 						case 'COMPANION_IP':
-							appConfig.set('remoteIp', value)
+							appConfig.set('companionHost', value)
 							break
 						case 'COMPANION_PORT': {
 							const port = Number(value)
@@ -62,7 +55,7 @@ Promise.resolve()
 								console.log('COMPANION_PORT is not a number!')
 								break
 							}
-							appConfig.set('remotePort', port)
+							appConfig.set('companionPort', port)
 							break
 						}
 						case 'REST_PORT': {
@@ -90,7 +83,6 @@ Promise.resolve()
 				}
 			} catch (e: any) {
 				if (e.code === 'ENOENT') continue
-				// Failed, try next file
 				console.log(`Unable to import from file "${importPath}"`, e)
 			}
 		}

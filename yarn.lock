@@ -1129,6 +1129,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@julusian/midi@npm:^3.6.1":
+  version: 3.6.1
+  resolution: "@julusian/midi@npm:3.6.1"
+  dependencies:
+    node-addon-api: "npm:^6.1.0"
+    node-gyp: "npm:latest"
+    pkg-prebuilds: "npm:^1.0.0"
+  checksum: 10c0/de7d5b215cfb89a261909aafe99adb586ba444ca9ba484905eb11ccce5660ea41b58bd890517af6f1faebac5da4cf80544df57e8ef7044108711be446f6d7f81
+  languageName: node
+  linkType: hard
+
 "@julusian/segfault-raub@npm:^2.3.2":
   version: 2.3.2
   resolution: "@julusian/segfault-raub@npm:2.3.2"
@@ -7379,6 +7390,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"node-addon-api@npm:^6.1.0":
+  version: 6.1.0
+  resolution: "node-addon-api@npm:6.1.0"
+  dependencies:
+    node-gyp: "npm:latest"
+  checksum: 10c0/d2699c4ad15740fd31482a3b6fca789af7723ab9d393adc6ac45250faaee72edad8f0b10b2b9d087df0de93f1bdc16d97afdd179b26b9ebc9ed68b569faa4bac
+  languageName: node
+  linkType: hard
+
 "node-addon-api@npm:^8.0.0":
   version: 8.5.0
   resolution: "node-addon-api@npm:8.5.0"
@@ -8759,6 +8779,7 @@ __metadata:
     "@companion-surface/host": "npm:^1.2.0"
     "@julusian/bonjour-service": "npm:^1.4.2"
     "@julusian/image-rs": "npm:^2.1.1"
+    "@julusian/midi": "npm:^3.6.1"
     "@julusian/segfault-raub": "npm:^2.3.2"
     "@koa/router": "npm:^15.4.0"
     "@napi-rs/canvas": "npm:^0.1.97"

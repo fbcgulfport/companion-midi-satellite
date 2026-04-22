@@ -1,74 +1,74 @@
-import Conf from 'conf'
-import type { CompanionSatelliteClient } from './client/client.js'
+import type Conf from 'conf'
 import type { SatelliteConfig, SatelliteConfigInstance } from './config.js'
-import type { components as openapiComponents } from './generated/openapi.js'
+import type { MidiButtonPusher } from './midi-button-pusher.js'
 
-export type ApiStatusResponse = openapiComponents['schemas']['StatusResponse']
-export type ApiConfigData = openapiComponents['schemas']['ConfigData']
-export type ApiConfigDataUpdate = openapiComponents['schemas']['ConfigDataUpdate']
-export type ApiSurfaceInfo = openapiComponents['schemas']['SurfaceInfo']
-export type ApiSurfacePluginInfo = openapiComponents['schemas']['SurfacePluginInfo']
-export type ApiSurfacePluginsEnabled = Record<string, boolean>
+export interface ApiStatusResponse {
+	midiAvailable: boolean
+	midiEnabled: boolean
+	midiPortOpen: boolean
+	midiPortType: 'virtual' | 'named'
+	midiPortName: string
+	companionHost: string
+	companionPort: number
+	lastError: string | null
+}
 
-export type ApiConfigDataUpdateElectron = ApiConfigDataUpdate & Pick<Partial<ApiConfigData>, 'httpEnabled' | 'httpPort'>
+export interface ApiConfigData {
+	companionHost: string
+	companionPort: number
+	midiEnabled: boolean
+	midiPortType: 'virtual' | 'named'
+	midiPortName: string
+	runAtStartup: boolean
+	httpEnabled: boolean
+	httpPort: number
+}
+
+export type ApiConfigDataUpdate = Partial<ApiConfigData>
+export type ApiConfigDataUpdateElectron = ApiConfigDataUpdate
 
 export interface SatelliteUiApi {
 	includeApiEnable: boolean
 	getConfig: () => Promise<ApiConfigData>
 	saveConfig: (newConfig: ApiConfigDataUpdate) => Promise<ApiConfigData>
 	getStatus: () => Promise<ApiStatusResponse>
-	rescanSurfaces: () => Promise<void>
-	connectedSurfaces: () => Promise<ApiSurfaceInfo[]>
-	surfacePlugins: () => Promise<ApiSurfacePluginInfo[]>
-	surfacePluginsEnabled: () => Promise<ApiSurfacePluginsEnabled>
-	surfacePluginsEnabledUpdate: (newConfig: ApiSurfacePluginsEnabled) => Promise<ApiSurfacePluginsEnabled>
+	getMidiPorts: () => Promise<string[]>
 }
 
-export function compileStatus(client: CompanionSatelliteClient): ApiStatusResponse {
+export function compileStatus(appConfig: Conf<SatelliteConfig>, midiPusher: MidiButtonPusher): ApiStatusResponse {
+	const midiStatus = midiPusher.getStatus()
 	return {
-		connected: client.connected,
-		companionVersion: client.companionVersion,
-		companionApiVersion: client.companionApiVersion,
-		companionUnsupportedApi: client.companionUnsupported,
+		midiAvailable: midiStatus.midiAvailable,
+		midiEnabled: midiStatus.midiEnabled,
+		midiPortOpen: midiStatus.midiPortOpen,
+		midiPortType: midiStatus.midiPortType,
+		midiPortName: midiStatus.midiPortName,
+		companionHost: appConfig.get('companionHost'),
+		companionPort: appConfig.get('companionPort'),
+		lastError: midiStatus.lastError,
 	}
 }
 
 export function compileConfig(appConfig: Conf<SatelliteConfig>): ApiConfigData {
 	return {
-		protocol: appConfig.get('remoteProtocol'),
-		host: appConfig.get('remoteIp'),
-		port: appConfig.get('remotePort'),
-		wsAddress: appConfig.get('remoteWsAddress'),
-
-		installationName: appConfig.get('installationName'),
-
+		companionHost: appConfig.get('companionHost'),
+		companionPort: appConfig.get('companionPort'),
+		midiEnabled: appConfig.get('midiEnabled'),
+		midiPortType: appConfig.get('midiPortType'),
+		midiPortName: appConfig.get('midiPortName'),
+		runAtStartup: appConfig.get('runAtStartup'),
 		httpEnabled: appConfig.get('restEnabled'),
 		httpPort: appConfig.get('restPort'),
-
-		mdnsEnabled: appConfig.get('mdnsEnabled'),
 	}
 }
 
 export function updateConfig(appConfig: SatelliteConfigInstance, newConfig: ApiConfigDataUpdateElectron): void {
-	if (newConfig.protocol !== undefined) appConfig.set('remoteProtocol', newConfig.protocol)
-	if (newConfig.host !== undefined) appConfig.set('remoteIp', newConfig.host)
-	if (newConfig.port !== undefined) appConfig.set('remotePort', newConfig.port)
-	if (newConfig.wsAddress !== undefined) appConfig.set('remoteWsAddress', newConfig.wsAddress)
-
+	if (newConfig.companionHost !== undefined) appConfig.set('companionHost', newConfig.companionHost)
+	if (newConfig.companionPort !== undefined) appConfig.set('companionPort', newConfig.companionPort)
+	if (newConfig.midiEnabled !== undefined) appConfig.set('midiEnabled', newConfig.midiEnabled)
+	if (newConfig.midiPortType !== undefined) appConfig.set('midiPortType', newConfig.midiPortType)
+	if (newConfig.midiPortName !== undefined) appConfig.set('midiPortName', newConfig.midiPortName)
+	if (newConfig.runAtStartup !== undefined) appConfig.set('runAtStartup', newConfig.runAtStartup)
 	if (newConfig.httpEnabled !== undefined) appConfig.set('restEnabled', newConfig.httpEnabled)
 	if (newConfig.httpPort !== undefined) appConfig.set('restPort', newConfig.httpPort)
-
-	if (newConfig.mdnsEnabled !== undefined) appConfig.set('mdnsEnabled', newConfig.mdnsEnabled)
-	if (newConfig.installationName !== undefined) appConfig.set('installationName', newConfig.installationName)
-}
-
-export function updateSurfacePluginsEnabledConfig(
-	appConfig: SatelliteConfigInstance,
-	newConfig: ApiSurfacePluginsEnabled,
-): void {
-	for (const [pluginId, enabled] of Object.entries(newConfig)) {
-		appConfig.set(`surfacePluginsEnabled.${pluginId}`, !!enabled)
-	}
-
-	console.log('Updated surfacePluginsEnabled:', appConfig.get('surfacePluginsEnabled'))
 }

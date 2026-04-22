@@ -1,63 +1,31 @@
-import type {
-	SatelliteUiApi,
-	ApiConfigData,
-	ApiStatusResponse,
-	ApiConfigDataUpdate,
-	ApiSurfaceInfo,
-	ApiSurfacePluginInfo,
-	ApiSurfacePluginsEnabled,
-} from './types'
-import type { paths } from '../../../satellite/src/generated/openapi'
-import createClient from 'openapi-fetch'
+import type { SatelliteUiApi, ApiConfigData, ApiStatusResponse, ApiConfigDataUpdate } from './types'
 
-const client = createClient<paths>({ baseUrl: '/api/' })
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+	const response = await fetch(`/api${path}`, init)
+	if (!response.ok) {
+		throw new Error(await response.text())
+	}
+	return (await response.json()) as T
+}
 
 export const SatelliteRestApi: SatelliteUiApi = {
 	includeApiEnable: false,
 	getStatus: async function (): Promise<ApiStatusResponse> {
-		const { data, error } = await client.GET('/status', {})
-		if (error) throw new Error(error.error)
-		return data
+		return requestJson<ApiStatusResponse>('/status')
 	},
 	getConfig: async function (): Promise<ApiConfigData> {
-		const { data, error } = await client.GET('/config', {})
-		if (error) throw new Error(error.error)
-		return data
+		return requestJson<ApiConfigData>('/config')
 	},
 	saveConfig: async function (newConfig: ApiConfigDataUpdate): Promise<ApiConfigData> {
-		const { data, error } = await client.POST('/config', {
-			body: newConfig,
+		return requestJson<ApiConfigData>('/config', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(newConfig),
 		})
-		if (error) throw new Error(error.error)
-		return data
 	},
-	rescanSurfaces: async function (): Promise<void> {
-		const { data, error } = await client.POST('/surfaces/rescan', {})
-		if (error) throw new Error(error.error)
-		return data
-	},
-	connectedSurfaces: async function (): Promise<ApiSurfaceInfo[]> {
-		const { data, error } = await client.GET('/surfaces', {})
-		if (error) throw new Error(error.error)
-		return data
-	},
-	surfacePlugins: async function (): Promise<ApiSurfacePluginInfo[]> {
-		const { data, error } = await client.GET('/surfaces/plugins/installed', {})
-		if (error) throw new Error(error.error)
-		return data
-	},
-	surfacePluginsEnabled: async function (): Promise<ApiSurfacePluginsEnabled> {
-		const { data, error } = await client.GET('/surfaces/plugins/enabled', {})
-		if (error) throw new Error(error.error)
-		return data
-	},
-	surfacePluginsEnabledUpdate: async function (
-		newConfig: ApiSurfacePluginsEnabled,
-	): Promise<ApiSurfacePluginsEnabled> {
-		const { data, error } = await client.POST('/surfaces/plugins/enabled', {
-			body: newConfig,
-		})
-		if (error) throw new Error(error.error)
-		return data
+	getMidiPorts: async function (): Promise<string[]> {
+		return requestJson<string[]>('/midi/ports')
 	},
 }

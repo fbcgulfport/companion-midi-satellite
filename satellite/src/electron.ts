@@ -3,35 +3,22 @@ import '@julusian/segfault-raub'
 import { app, Tray, Menu, MenuItem, dialog, nativeImage, BrowserWindow, ipcMain, shell } from 'electron'
 import * as path from 'path'
 import electronStore from 'electron-store'
-import { SurfaceManager } from './surface-manager.js'
-import { CompanionSatelliteClient } from './client/client.js'
 import { RestServer } from './rest.js'
-import { flushLogger } from './logging.js'
-import {
-	SatelliteConfig,
-	ensureFieldsPopulated,
-	getConnectionDetailsFromConfig,
-	listenToConnectionConfigChanges,
-} from './config.js'
+import { flushLogger, createLogger } from './logging.js'
+import { SatelliteConfig, ensureFieldsPopulated, listenToMidiConfigChanges, getMidiPusherConfig } from './config.js'
 import {
 	ApiConfigData,
 	ApiConfigDataUpdateElectron,
 	ApiStatusResponse,
-	ApiSurfaceInfo,
-	ApiSurfacePluginInfo,
-	ApiSurfacePluginsEnabled,
 	compileConfig,
 	compileStatus,
 	updateConfig,
-	updateSurfacePluginsEnabledConfig,
 } from './apiTypes.js'
 import { fileURLToPath } from 'url'
-import { MdnsAnnouncer } from './mdnsAnnouncer.js'
-import debounceFn from 'debounce-fn'
 import { ElectronUpdater } from './electronUpdater.js'
 import { setMaxListeners } from 'events'
+import { MidiButtonPusher } from './midi-button-pusher.js'
 
-// Ensure there isn't another instance of companion running already
 const lock = app.requestSingleInstanceLock()
 if (!lock) {
 	dialog.showErrorBox(
@@ -43,14 +30,13 @@ if (!lock) {
 	process.exit(0)
 }
 
-const appConfig = new electronStore<SatelliteConfig>({
-	// schema: satelliteConfigSchema,
-	// migrations: satelliteConfigMigrations,
-})
+const appConfig = new electronStore<SatelliteConfig>({})
 setMaxListeners(0, appConfig.events)
 ensureFieldsPopulated(appConfig)
 
 const electronUpdater = new ElectronUpdater()
+const midiLogger = createLogger('MidiButtonPusher')
+const midiPusher = new MidiButtonPusher(midiLogger)
 
 let tray: Tray | undefined
 let configWindow: BrowserWindow | undefined
@@ -60,44 +46,21 @@ app.on('window-all-closed', () => {
 	// Block default behaviour of exit on close
 })
 
-console.log('Starting')
-
 const webRoot = fileURLToPath(new URL(app.isPackaged ? '../../webui' : '../../webui/dist', import.meta.url))
+const server = new RestServer(webRoot, appConfig, midiPusher)
 
-const client = new CompanionSatelliteClient({ debug: true })
-const surfaceManager = await SurfaceManager.create(client, appConfig.get('surfacePluginsEnabled'))
-const server = new RestServer(webRoot, appConfig, client, surfaceManager)
-const mdnsAnnouncer = new MdnsAnnouncer(appConfig)
+const applyMidiConfig = () => {
+	midiPusher.applyConfig(getMidiPusherConfig(appConfig))
+}
 
-listenToConnectionConfigChanges(appConfig, tryConnect)
-appConfig.onDidChange(
-	'surfacePluginsEnabled',
-	debounceFn(() => surfaceManager.updatePluginsEnabled(appConfig.get('surfacePluginsEnabled')), {
-		wait: 50,
-		after: true,
-		before: false,
-	}),
-)
-
-client.on('log', (l) => console.log(l))
-client.on('error', (e) => console.error(e))
-
-function tryConnect() {
-	client.connect(getConnectionDetailsFromConfig(appConfig)).catch((e) => {
-		console.log('Failed to update connection: ', e)
+listenToMidiConfigChanges(appConfig, applyMidiConfig)
+appConfig.onDidChange('runAtStartup', (enabled) => {
+	app.setLoginItemSettings({
+		openAtLogin: !!enabled,
 	})
-}
-function restartRestApi() {
-	server.open()
-}
+})
 
 const trayMenu = new Menu()
-trayMenu.append(
-	new MenuItem({
-		label: 'Scan devices',
-		click: trayScanDevices,
-	}),
-)
 trayMenu.append(
 	new MenuItem({
 		label: 'Configure',
@@ -110,14 +73,12 @@ trayMenu.append(
 				show: false,
 				width: 720,
 				minWidth: 500,
-				maxWidth: isProduction ? 720 : undefined,
 				height: 900,
 				minHeight: 500,
 				autoHideMenuBar: isProduction,
 				webPreferences: {
 					preload: fileURLToPath(new URL('../dist/electronPreload.cjs', import.meta.url)),
 				},
-				// resizable: !isProduction,
 			})
 			configWindow.on('close', () => {
 				configWindow = undefined
@@ -145,6 +106,16 @@ trayMenu.append(
 		},
 	}),
 )
+trayMenu.append(
+	new MenuItem({
+		label: 'Run at startup',
+		type: 'checkbox',
+		checked: appConfig.get('runAtStartup'),
+		click: (item) => {
+			appConfig.set('runAtStartup', item.checked)
+		},
+	}),
+)
 trayMenu.append(electronUpdater.menuItem)
 trayMenu.append(
 	new MenuItem({
@@ -161,11 +132,7 @@ trayMenu.append(
 
 app.on('before-quit', (e) => {
 	e.preventDefault()
-	Promise.allSettled([
-		// cleanup
-		(async () => client.disconnect())(),
-		surfaceManager.close(),
-	])
+	Promise.allSettled([(async () => midiPusher.close())(), (async () => server.close())()])
 		.then(async () => {
 			await flushLogger()
 		})
@@ -179,13 +146,13 @@ app.on('before-quit', (e) => {
 
 app.whenReady()
 	.then(async () => {
-		console.log('App ready')
-
 		electronUpdater.check()
+		server.open()
+		applyMidiConfig()
 
-		tryConnect()
-		restartRestApi()
-		mdnsAnnouncer.start()
+		app.setLoginItemSettings({
+			openAtLogin: appConfig.get('runAtStartup'),
+		})
 
 		let trayImagePath = new URL('../assets/tray.png', import.meta.url)
 		let trayImageOfflinePath = new URL('../assets/tray-offline.png', import.meta.url)
@@ -203,31 +170,35 @@ app.whenReady()
 		const trayImageOffline = nativeImage.createFromPath(fileURLToPath(trayImageOfflinePath))
 
 		tray = new Tray(trayImageOffline)
-
-		client.on('connected', () => {
-			tray?.setImage(trayImage)
-		})
-		client.on('disconnected', () => {
-			tray?.setImage(trayImageOffline)
-		})
-
-		console.log('set tray')
 		tray.setContextMenu(trayMenu)
+
+		const setTrayStatus = () => {
+			const status = midiPusher.getStatus()
+			tray?.setImage(status.midiPortOpen ? trayImage : trayImageOffline)
+			tray?.setToolTip(
+				status.midiPortOpen
+					? `Companion MIDI Satellite (${status.midiPortType}: ${status.midiPortName})`
+					: 'Companion MIDI Satellite (MIDI disconnected)',
+			)
+		}
+
+		midiPusher.on('status', () => {
+			setTrayStatus()
+		})
+		setTrayStatus()
 	})
 	.catch((e) => {
 		dialog.showErrorBox(`Startup error`, `Failed to launch: ${e}`)
 	})
 
 function trayQuit() {
-	console.log('quit click')
 	dialog
 		.showMessageBox({
-			title: 'Companion Satellite',
-			message: 'Are you sure you want to quit Companion Satellite?',
+			title: 'Companion MIDI Satellite',
+			message: 'Are you sure you want to quit Companion MIDI Satellite?',
 			buttons: ['Quit', 'Cancel'],
 		})
 		.then(async (v) => {
-			console.log('quit: ', v.response)
 			if (v.response === 0) {
 				app.quit()
 			}
@@ -237,14 +208,8 @@ function trayQuit() {
 		})
 }
 
-function trayScanDevices() {
-	console.log('do scan')
-	surfaceManager.scanForSurfaces()
-}
-
 function trayAbout() {
 	if (aboutWindow?.isVisible()) return
-	console.log('about click')
 
 	const isProduction = app.isPackaged
 
@@ -294,42 +259,27 @@ function trayAbout() {
 	}
 }
 
-ipcMain.on('rescan', () => {
-	console.log('rescan')
-	surfaceManager.scanForSurfaces()
-})
 ipcMain.handle('getStatus', async (): Promise<ApiStatusResponse> => {
-	// console.log('getStatus')
-	return compileStatus(client)
+	return compileStatus(appConfig, midiPusher)
 })
 ipcMain.handle('getConfig', async (): Promise<ApiConfigData> => {
 	return compileConfig(appConfig)
 })
 ipcMain.handle('saveConfig', async (_e, newConfig: ApiConfigDataUpdateElectron): Promise<ApiConfigData> => {
-	console.log('saveConfig', newConfig)
 	updateConfig(appConfig, newConfig)
+	if (newConfig.runAtStartup !== undefined) {
+		app.setLoginItemSettings({
+			openAtLogin: newConfig.runAtStartup,
+		})
+	}
+	applyMidiConfig()
 	return compileConfig(appConfig)
 })
-ipcMain.handle('connectedSurfaces', async (): Promise<ApiSurfaceInfo[]> => {
-	return surfaceManager.getOpenSurfacesInfo()
+ipcMain.handle('getMidiPorts', async (): Promise<string[]> => {
+	return midiPusher.listPorts()
 })
-ipcMain.handle('surfacePlugins', async (): Promise<ApiSurfacePluginInfo[]> => {
-	return surfaceManager.getAvailablePluginsInfo()
-})
-ipcMain.handle('surfacePluginsEnabled', async (): Promise<ApiSurfacePluginsEnabled> => {
-	return appConfig.get('surfacePluginsEnabled')
-})
-ipcMain.handle(
-	'surfacePluginsEnabledUpdate',
-	async (_e, newConfig: ApiSurfacePluginsEnabled): Promise<ApiSurfacePluginsEnabled> => {
-		updateSurfacePluginsEnabledConfig(appConfig, newConfig)
-		return appConfig.get('surfacePluginsEnabled')
-	},
-)
 
-// about window
 ipcMain.handle('openShell', async (_e, url: string): Promise<void> => {
-	console.log('openShell', url)
 	shell.openExternal(url).catch((e) => {
 		console.error('Failed to open shell', e)
 	})

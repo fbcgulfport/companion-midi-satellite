@@ -3,7 +3,7 @@ import type { ApiStatusResponse } from '../Api/types.js'
 import { useQuery } from '@tanstack/react-query'
 import { CONNECTION_STATUS_QUERY_KEY } from './constants'
 import { JSX } from 'react'
-import { CheckCircle2, Loader2, AlertCircle, AlertTriangle } from 'lucide-react'
+import { CheckCircle2, Loader2, AlertCircle, AlertTriangle, CircleOff } from 'lucide-react'
 import { NonIdealState } from '@/components/NonIdealState'
 
 export function ConnectionStatus(): JSX.Element {
@@ -34,39 +34,50 @@ export function ConnectionStatus(): JSX.Element {
 	)
 }
 
-interface ConnectionStatusDataProps {
-	status: ApiStatusResponse
-}
-function ConnectionStatusData({ status }: ConnectionStatusDataProps) {
-	if (status.companionUnsupportedApi) {
+function ConnectionStatusData({ status }: { status: ApiStatusResponse }) {
+	if (!status.midiAvailable) {
 		return (
 			<NonIdealState
 				icon={AlertCircle}
-				title="Incompatible Version"
-				description={`Companion ${status.companionVersion ?? ''} is not supported`}
+				title="MIDI Unavailable"
+				description={status.lastError ?? 'MIDI input subsystem failed to initialize'}
 				iconClassName="h-12 w-12 text-red-500"
 				titleClassName="text-lg text-red-600 dark:text-red-400"
 			/>
 		)
-	} else if (status.connected) {
+	}
+
+	if (!status.midiEnabled) {
+		return (
+			<NonIdealState
+				icon={CircleOff}
+				title="MIDI Button Pusher Disabled"
+				description="Enable MIDI Button Pusher in configuration"
+				iconClassName="h-12 w-12 text-slate-500"
+				titleClassName="text-lg text-slate-600 dark:text-slate-400"
+			/>
+		)
+	}
+
+	if (status.midiPortOpen) {
 		return (
 			<NonIdealState
 				icon={CheckCircle2}
-				title="Connected"
-				description={`Companion ${status.companionVersion}`}
+				title="Ready"
+				description={`Listening on ${status.midiPortType} port "${status.midiPortName}" -> ${status.companionHost}:${status.companionPort}`}
 				iconClassName="h-12 w-12 text-green-500"
 				titleClassName="text-lg text-green-600 dark:text-green-400"
 			/>
 		)
-	} else {
-		return (
-			<NonIdealState
-				icon={Loader2}
-				title="Connecting..."
-				description="Searching for Companion"
-				iconClassName="h-12 w-12 text-blue-500 animate-spin"
-				titleClassName="text-lg text-blue-600 dark:text-blue-400"
-			/>
-		)
 	}
+
+	return (
+		<NonIdealState
+			icon={AlertCircle}
+			title="MIDI Port Closed"
+			description={status.lastError ?? 'Enable MIDI and verify port name/type'}
+			iconClassName="h-12 w-12 text-amber-500"
+			titleClassName="text-lg text-amber-600 dark:text-amber-400"
+		/>
+	)
 }

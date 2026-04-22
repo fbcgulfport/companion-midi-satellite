@@ -7,14 +7,14 @@ import { useSatelliteApi } from '@/Api/Context.js'
 import { Button } from '@/components/ui/button.js'
 import { Switch } from '@/components/ui/switch.js'
 import React, { JSX } from 'react'
-import { CONNECTION_CONFIG_QUERY_KEY, CONNECTION_STATUS_QUERY_KEY } from './constants.js'
+import { CONNECTION_CONFIG_QUERY_KEY, CONNECTION_STATUS_QUERY_KEY, MIDI_PORTS_QUERY_KEY } from './constants.js'
 import { BarLoader } from 'react-spinners'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.js'
 import { cn } from '@/lib/utils.js'
 
-const PROTOCOL_ITEMS = [
-	{ value: 'tcp', label: 'TCP (Default)' },
-	{ value: 'ws', label: 'WebSocket (Advanced)' },
+const MIDI_PORT_TYPE_ITEMS = [
+	{ value: 'virtual', label: 'Custom Virtual Port' },
+	{ value: 'named', label: 'Existing MIDI Input Port' },
 ]
 
 export function ConnectionConfig(): JSX.Element {
@@ -35,19 +35,21 @@ export function ConnectionConfig(): JSX.Element {
 function ConnectionConfigContent({ config }: { config: ApiConfigData }): JSX.Element {
 	const api = useSatelliteApi()
 	const queryClient = useQueryClient()
+	const midiPorts = useQuery<string[]>({
+		queryKey: [MIDI_PORTS_QUERY_KEY],
+		queryFn: api.getMidiPorts,
+		refetchInterval: 5000,
+	})
 
 	const form = useForm({
 		defaultValues: config,
 		onSubmit: async ({ value }) => {
-			// Do something with form data
-			console.log('saving', value)
-
-			const savedData = await api.saveConfig(value)
-
-			console.log('new', savedData)
-			// TODO - this doesn't work
-			// form.reset(savedData)
-			await queryClient.invalidateQueries({ queryKey: [CONNECTION_STATUS_QUERY_KEY] })
+			await api.saveConfig(value)
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: [CONNECTION_STATUS_QUERY_KEY] }),
+				queryClient.invalidateQueries({ queryKey: [CONNECTION_CONFIG_QUERY_KEY] }),
+				queryClient.invalidateQueries({ queryKey: [MIDI_PORTS_QUERY_KEY] }),
+			])
 		},
 	})
 
@@ -60,116 +62,50 @@ function ConnectionConfigContent({ config }: { config: ApiConfigData }): JSX.Ele
 			}}
 		>
 			<div className="grid gap-3 grid-cols-4 mt-2">
-				<legend className="col-span-3 col-start-2 px-1">Companion Connection</legend>
+				<legend className="col-span-3 col-start-2 px-1">Companion HTTP</legend>
 
 				<form.Field
-					name="protocol"
+					name="companionHost"
 					children={(field) => (
-						<FormRow label="Protocol" htmlFor={field.name} hint="TCP is recommended for most use cases.">
-							<Select
+						<FormRow label="Companion Host" htmlFor={field.name}>
+							<Input
+								type="text"
+								id={field.name}
+								name={field.name}
+								placeholder="127.0.0.1"
 								value={field.state.value}
-								items={PROTOCOL_ITEMS}
-								onValueChange={(value) => field.handleChange(value as 'tcp' | 'ws')}
-							>
-								<SelectTrigger id={field.name} name={field.name} className="w-full">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{PROTOCOL_ITEMS.map((value) => (
-										<SelectItem key={value.value} value={value.value}>
-											{value.label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(e.target.value)}
+							/>
 						</FormRow>
 					)}
 				/>
-				<form.Subscribe
-					selector={(state) => state.values.protocol}
-					children={(protocol) => (
-						<>
-							<form.Field
-								name="host"
-								children={(field) => (
-									<FormRow label="Address" htmlFor={field.name} hidden={protocol !== 'tcp'}>
-										<Input
-											type="text"
-											id={field.name}
-											name={field.name}
-											placeholder="Companion address (eg 127.0.0.1 or companion.local)"
-											value={field.state.value}
-											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(e.target.value)}
-										/>
-									</FormRow>
-								)}
+				<form.Field
+					name="companionPort"
+					children={(field) => (
+						<FormRow label="Companion Port" htmlFor={field.name}>
+							<Input
+								type="number"
+								id={field.name}
+								name={field.name}
+								placeholder="8000"
+								min={1}
+								max={65535}
+								value={field.state.value}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(Number(e.target.value))}
 							/>
-							<form.Field
-								name="port"
-								children={(field) => (
-									<FormRow
-										label="Port"
-										htmlFor={field.name}
-										hidden={protocol !== 'tcp'}
-										hint="Only change this if you know what you are doing. In almost all cases this should be left at the default."
-									>
-										<Input
-											type="number"
-											id={field.name}
-											name={field.name}
-											placeholder="16622"
-											min={1}
-											max={65535}
-											value={field.state.value}
-											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(Number(e.target.value))}
-										/>
-									</FormRow>
-								)}
-							/>
-							<form.Field
-								name="wsAddress"
-								children={(field) => (
-									<FormRow
-										label="Websocket URL"
-										htmlFor={field.name}
-										hidden={protocol !== 'ws'}
-										hint="This must be a full URL, eg ws://127.0.0.1:16623"
-									>
-										<Input
-											type="text"
-											id={field.name}
-											name={field.name}
-											value={field.state.value}
-											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(e.target.value)}
-										/>
-									</FormRow>
-								)}
-							/>
-						</>
+						</FormRow>
 					)}
 				/>
 
 				<hr className="col-span-3 col-start-2" />
-
-				<legend className="col-span-3 col-start-2 px-1">MDNS Discovery</legend>
+				<legend className="col-span-3 col-start-2 px-1">MIDI Button Pusher</legend>
 
 				<form.Field
-					name="mdnsEnabled"
+					name="midiEnabled"
 					children={(field) => (
-						<FormRow
-							label="MDNS Announce"
-							htmlFor={field.name}
-							hint={
-								<>
-									Announce this Satellite installation to the network.
-									<br />
-									This allows for easy setup from inside Companion.
-								</>
-							}
-						>
+						<FormRow label="Enable MIDI" htmlFor={field.name}>
 							<Switch
 								id={field.name}
 								name={field.name}
@@ -180,18 +116,51 @@ function ConnectionConfigContent({ config }: { config: ApiConfigData }): JSX.Ele
 						</FormRow>
 					)}
 				/>
+
 				<form.Field
-					name="installationName"
+					name="midiPortType"
 					children={(field) => (
 						<FormRow
-							label="Installation Name"
+							label="MIDI Port Type"
 							htmlFor={field.name}
-							hint="Name to use for this installation in MDNS announcements."
+							hint="Virtual = app creates a local destination. Named = connect to existing MIDI input port."
+						>
+							<Select
+								value={field.state.value}
+								onValueChange={(value) => field.handleChange(value as 'virtual' | 'named')}
+							>
+								<SelectTrigger id={field.name} name={field.name} className="w-full">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{MIDI_PORT_TYPE_ITEMS.map((item) => (
+										<SelectItem key={item.value} value={item.value}>
+											{item.label}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</FormRow>
+					)}
+				/>
+
+				<form.Field
+					name="midiPortName"
+					children={(field) => (
+						<FormRow
+							label="MIDI Port Name"
+							htmlFor={field.name}
+							hint={
+								midiPorts.data?.length
+									? `Detected inputs: ${midiPorts.data.join(', ')}`
+									: 'No MIDI input ports detected yet. Virtual mode still works.'
+							}
 						>
 							<Input
 								type="text"
 								id={field.name}
 								name={field.name}
+								placeholder="CompanionMidiSatellite"
 								value={field.state.value}
 								onBlur={field.handleBlur}
 								onChange={(e) => field.handleChange(e.target.value)}
@@ -200,11 +169,25 @@ function ConnectionConfigContent({ config }: { config: ApiConfigData }): JSX.Ele
 					)}
 				/>
 
+				<form.Field
+					name="runAtStartup"
+					children={(field) => (
+						<FormRow label="Run at startup" htmlFor={field.name}>
+							<Switch
+								id={field.name}
+								name={field.name}
+								checked={field.state.value}
+								onBlur={field.handleBlur}
+								onCheckedChange={(checked) => field.handleChange(checked)}
+							/>
+						</FormRow>
+					)}
+				/>
+
 				{api.includeApiEnable && (
 					<>
 						<hr className="col-span-3 col-start-2" />
-
-						<legend className="col-span-3 col-start-2 px-1">HTTP Interface & API</legend>
+						<legend className="col-span-3 col-start-2 px-1">HTTP Interface</legend>
 
 						<form.Field
 							name="httpEnabled"
@@ -246,7 +229,7 @@ function ConnectionConfigContent({ config }: { config: ApiConfigData }): JSX.Ele
 					children={([canSubmit, isSubmitting, isDirty]) => (
 						<div className="col-span-3 col-start-2 flex justify-start">
 							<Button type="submit" disabled={!canSubmit || !isDirty}>
-								{isSubmitting ? '...' : 'Submit'}
+								{isSubmitting ? '...' : 'Save'}
 							</Button>
 						</div>
 					)}
