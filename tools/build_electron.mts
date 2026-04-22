@@ -55,18 +55,18 @@ const options: electronBuilder.Configuration = {
 		{
 			provider: 'generic',
 			publishAutoUpdate: false,
-			url: 'https://api.bitfocus.io/v1/product/electron-updater/companion-satellite',
+			url: 'https://api.bitfocus.io/v1/product/electron-updater/companion-midi-satellite',
 		},
 	],
-	productName: 'Companion Satellite',
-	appId: 'remote.companion.bitfocus.no',
+	productName: 'Companion MIDI Satellite',
+	appId: 'io.github.fbcgulfport.companion-midi-satellite',
 	npmRebuild: false,
 	directories: {
 		buildResources: 'assets/',
 		output: '../electron-output/',
 	},
 	mac: {
-		category: 'no.bitfocus.companion.remote',
+		category: 'public.app-category.utilities',
 		target: 'dmg',
 		extendInfo: {
 			LSBackgroundOnly: 1,
@@ -80,7 +80,7 @@ const options: electronBuilder.Configuration = {
 		identity: process.env.CSC_LINK ? undefined : null, // Disable signing when CSC_LINK is not set
 	},
 	dmg: {
-		artifactName: 'companion-satellite-${arch}.dmg',
+		artifactName: 'companion-midi-satellite-${arch}.dmg',
 	},
 	win: {
 		target: 'nsis',
@@ -107,7 +107,7 @@ const options: electronBuilder.Configuration = {
 				const vm = await packager.vm.value
 				await vm.exec(
 					'powershell.exe',
-					['c:\\actions-runner-bitfocus\\sign.ps1', targetPath, `-Description`, 'Bitfocus Companion Satellite'],
+					['c:\\actions-runner-bitfocus\\sign.ps1', targetPath, `-Description`, 'Bitfocus Companion MIDI Satellite'],
 					{
 						timeout: 10 * 60 * 1000,
 						env: process.env,
@@ -121,11 +121,11 @@ const options: electronBuilder.Configuration = {
 		perMachine: true,
 		oneClick: false,
 		allowElevation: true,
-		artifactName: 'companion-satellite-x64.exe',
+		artifactName: 'companion-midi-satellite-x64.exe',
 	},
 	linux: {
 		target: 'tar.gz',
-		artifactName: 'companion-satellite-${arch}.tar.gz',
+		artifactName: 'companion-midi-satellite-${arch}.tar.gz',
 		extraFiles: [
 			{
 				from: 'assets/linux',

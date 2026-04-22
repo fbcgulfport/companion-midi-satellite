@@ -1,19 +1,19 @@
 #!/bin/bash
 
-echo "To view the Companion Satellite License information run:"
+echo "To view the Companion MIDI Satellite License information run:"
 echo "  $ satellite-license"
 echo ""
 
-echo "To stop/start/restart or check the status of Companion Satellite run:"
+echo "To stop/start/restart or check the status of Companion MIDI Satellite run:"
 echo "  $ sudo systemctl [start/stop/restart/status] satellite"
 echo ""
 
-echo "To update Companion Satellite run:"
+echo "To update Companion MIDI Satellite run:"
 echo "  $ sudo satellite-update"
 echo "and follow the prompts"
 echo ""
 
-echo "To edit the Companion Satellite configuration run:"
+echo "To edit the Companion MIDI Satellite configuration run:"
 echo "  $ sudo satellite-edit-config"
 echo "and follow the prompts"
 echo ""

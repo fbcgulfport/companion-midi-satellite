@@ -49,7 +49,7 @@ export async function fetchBuiltinSurfaceModules(): Promise<string> {
 	return cacheDir
 }
 
-const userAgent = `Companion Satellite module grabber`
+const userAgent = `Companion MIDI Satellite module grabber`
 
 async function fetchSinglePackage(moduleId: string, moduleInfo: Record<string, any>) {
 	const moduleDir = path.join(cacheDir, moduleId)

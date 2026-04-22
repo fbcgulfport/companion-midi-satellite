@@ -9,7 +9,7 @@ fi
 systemctl stop satellite
 
 # fetch new code
-cd /usr/local/src/companion-satellite
+cd /usr/local/src/companion-midi-satellite
 git pull -q
 
 # do the update

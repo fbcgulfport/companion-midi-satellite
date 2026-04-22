@@ -9,7 +9,7 @@ const { autoUpdater } = electronUpdater
 // autoUpdater.setFeedURL({
 // 	provider: 'generic',
 // 	publishAutoUpdate: false,
-// 	url: 'https://api-staging.bitfocus.io/v1/product/electron-updater/companion-satellite',
+// 	url: 'https://api-staging.bitfocus.io/v1/product/electron-updater/companion-midi-satellite',
 // })
 
 const require = createRequire(import.meta.url)

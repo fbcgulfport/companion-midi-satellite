@@ -8,12 +8,12 @@ fi
 
 CURRENT_ARCH=$(dpkg --print-architecture)
 if [[ "$CURRENT_ARCH" != "x64" && "$CURRENT_ARCH" != "amd64" && "$CURRENT_ARCH" != "arm64" ]]; then
-    echo "$CURRENT_ARCH is not a supported cpu architecture for running Companion Satellite."
+    echo "$CURRENT_ARCH is not a supported cpu architecture for running Companion MIDI Satellite."
     echo "If you are running on an arm device (such as a Raspberry Pi), make sure to use an arm64 image."
     exit 1
 fi
 
-echo "This will attempt to install Companion Satellite as a system service on this device."
+echo "This will attempt to install Companion MIDI Satellite as a system service on this device."
 echo "It is designed to be run on headless servers, but can be used on desktop machines if you are happy to not have the tray icon."
 echo "A user called 'satellite' will be created to run the service, and various scripts will be installed to manage the service"
 
@@ -55,9 +55,9 @@ elif [ "$SATELLITE_BUILD" == "stable" ]; then
 fi
 
 # clone the repository
-rm -R /usr/local/src/companion-satellite &>/dev/null || true
-git clone https://github.com/bitfocus/companion-satellite.git -b $SATELLITE_BRANCH /usr/local/src/companion-satellite
-cd /usr/local/src/companion-satellite
+rm -R /usr/local/src/companion-midi-satellite &>/dev/null || true
+git clone https://github.com/fbcgulfport/companion-midi-satellite.git -b $SATELLITE_BRANCH /usr/local/src/companion-midi-satellite
+cd /usr/local/src/companion-midi-satellite
 
 # configure git for future updates
 git config --global pull.rebase false
@@ -76,13 +76,13 @@ cp ./pi-image/satellite-config /boot/satellite-config
 echo "export PATH=/opt/fnm/aliases/default/bin:\$PATH" >> /home/satellite/.bashrc
 
 # check that a build of satellite was installed
-if [ ! -d "/opt/companion-satellite" ] 
+if [ ! -d "/opt/companion-midi-satellite" ] 
 then
-    echo "No Companion Satellite build was installed!\nIt should be possible to recover from this with \"sudo satellite-update\"" 
+    echo "No Companion MIDI Satellite build was installed!\nIt should be possible to recover from this with \"sudo satellite-update\"" 
     exit 9999 # die with error code 9999
 fi
 
-echo "Companion Satellite is installed!"
+echo "Companion MIDI Satellite is installed!"
 echo "You can edit a subset of the configuration at \"/boot/satellite-config\" then can start it with \"sudo systemctl start satellite\" or \"sudo satellite-update\""
 echo "A http server will be started on port 9999 which gives access to the full configuration"
 

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-less /usr/local/src/companion-satellite/LICENSE
+less /usr/local/src/companion-midi-satellite/LICENSE

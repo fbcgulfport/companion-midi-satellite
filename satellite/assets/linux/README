@@ -1,15 +1,15 @@
 # Quickstart guide
 
-1. Headless Companion Satellite
+1. Headless Companion MIDI Satellite
 
    If you want to run satellite on a headless machine, consider using the install script
 
    This can be run with:
-   $ curl https://raw.githubusercontent.com/bitfocus/companion-satellite/main/pi-image/install.sh | bash
+   $ curl https://raw.githubusercontent.com/fbcgulfport/companion-midi-satellite/main/pi-image/install.sh | bash
 
    The benefit of this approach is that it will setup and manage any required dependencies, udev rules for you, and provide you with an easy script to run to perform an update.
 
-   Alternatively, you are able to set it up yourself and define a systemd unit to launch it or do whatever you wish. For examples on how to do this, check the scripts in the repository https://github.com/bitfocus/companion-satellite
+   Alternatively, you are able to set it up yourself and define a systemd unit to launch it or do whatever you wish. For examples on how to do this, check the scripts in the repository https://github.com/fbcgulfport/companion-midi-satellite
 
 2. Required Dependencies
 
@@ -30,4 +30,4 @@
 
 4. Launching
 
-   To run Satellite, either run companion-satellite to get the desktop build, or run `node dist/main.js` to start it headless.
+   To run Satellite, either run companion-midi-satellite to get the desktop build, or run `node dist/main.js` to start it headless.

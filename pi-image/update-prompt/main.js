@@ -8,7 +8,7 @@ const ALLOWED_VERSIONS = '^1.5.0 || ^2.0.0'
 /** @type {string | undefined} */
 let currentVersion
 try {
-	currentVersion = fs.readFileSync('/opt/companion-satellite/BUILD', 'utf-8').trim()
+	currentVersion = fs.readFileSync('/opt/companion-midi-satellite/BUILD', 'utf-8').trim()
 } catch (_e) {
 	// Assume none installed
 }
@@ -25,7 +25,7 @@ async function getLatestBuildsForBranch(branch, targetCount) {
 
 	// eslint-disable-next-line n/no-unsupported-features/node-builtins
 	const data = await fetch(
-		`https://api.bitfocus.io/v1/product/companion-satellite/packages?branch=${branch}&limit=${targetCount}&target=${target}`,
+		`https://api.bitfocus.io/v1/product/companion-midi-satellite/packages?branch=${branch}&limit=${targetCount}&target=${target}`,
 	)
 	const jsonData = await data.json()
 

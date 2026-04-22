@@ -1,7 +1,7 @@
 {
-  "name": "companion-satellite",
+  "name": "companion-midi-satellite",
   "version": "3.0.0-0",
-  "description": "Satellite Streamdeck connector for Bitfocus Companion",
+  "description": "MIDI Note-On to Companion button pusher menubar app",
   "author": {
     "name": "Julian Waller",
     "email": "git@julusian.co.uk",
@@ -9,12 +9,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bitfocus/companion-satellite.git"
+    "url": "git+https://github.com/fbcgulfport/companion-midi-satellite.git"
   },
   "bugs": {
-    "url": "https://github.com/bitfocus/companion-satellite/issues"
+    "url": "https://github.com/fbcgulfport/companion-midi-satellite/issues"
   },
-  "homepage": "https://github.com/bitfocus/companion-satellite#readme",
+  "homepage": "https://github.com/fbcgulfport/companion-midi-satellite#readme",
   "license": "MIT",
   "private": true,
   "workspaces": [

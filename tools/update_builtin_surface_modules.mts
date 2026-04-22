@@ -21,7 +21,7 @@ const baseUrl = process.env.STAGING_MODULE_API
 	? 'https://developer-staging.bitfocus.io/api'
 	: 'https://developer.bitfocus.io/api'
 
-const userAgent = `Companion Satellite builtin module scraper`
+const userAgent = `Companion MIDI Satellite builtin module scraper`
 
 function isSurfaceApiVersionCompatible(version: string): boolean {
 	return version === SURFACE_BASE_VERSION || validSurfaceApiRange.test(version)

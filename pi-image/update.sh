@@ -6,7 +6,7 @@
 # fail if this happens, to avoid breaking existing arm installations
 CURRENT_ARCH=$(dpkg --print-architecture)
 if [[ "$CURRENT_ARCH" != "x64" && "$CURRENT_ARCH" != "amd64" && "$CURRENT_ARCH" != "arm64" ]]; then
-	echo "$CURRENT_ARCH is not a supported cpu architecture for running Companion Satellite."
+	echo "$CURRENT_ARCH is not a supported cpu architecture for running Companion MIDI Satellite."
 	echo "If you are running on an arm device (such as a Raspberry Pi), make sure to use an arm64 image."
 	echo "YOUR INSTALLATION HAS NOT BEEN CHANGED. You must reinstall a new satellite image to update."
 	exit 0
@@ -20,7 +20,7 @@ export FNM_DIR=/opt/fnm
 export PATH=/opt/fnm:$PATH
 eval "`fnm env`"
 
-cd /usr/local/src/companion-satellite
+cd /usr/local/src/companion-midi-satellite
 
 # update the node version
 fnm use --install-if-missing
@@ -66,16 +66,16 @@ if [ -n "$SELECTED_URL" ]; then
 	rm /tmp/satellite-update.tar.gz
 
 	# copy across the useful files
-	rm -R -f /opt/companion-satellite
+	rm -R -f /opt/companion-midi-satellite
 	npx --yes @electron/asar@3 e /tmp/satellite-update/resources/app.asar /tmp/satellite-update/resources/app
-	mkdir /opt/companion-satellite
-	mv /tmp/satellite-update/resources/app /opt/companion-satellite/satellite
-	mkdir /opt/companion-satellite/webui
-	mv /tmp/satellite-update/resources/webui /opt/companion-satellite/webui/dist
-	# mv /tmp/satellite-update/*.rules /opt/companion-satellite/
+	mkdir /opt/companion-midi-satellite
+	mv /tmp/satellite-update/resources/app /opt/companion-midi-satellite/satellite
+	mkdir /opt/companion-midi-satellite/webui
+	mv /tmp/satellite-update/resources/webui /opt/companion-midi-satellite/webui/dist
+	# mv /tmp/satellite-update/*.rules /opt/companion-midi-satellite/
 	rm -R /tmp/satellite-update
 
-	echo "$SELECTED_NAME" > /opt/companion-satellite/BUILD
+	echo "$SELECTED_NAME" > /opt/companion-midi-satellite/BUILD
 
 	# remove the old dependencies
 	rm -R -f node_modules || true
@@ -110,10 +110,10 @@ fi
 systemctl daemon-reload
 
 # install some scripts
-ln -s -f /usr/local/src/companion-satellite/pi-image/satellite-license /usr/local/bin/satellite-license
-ln -s -f /usr/local/src/companion-satellite/pi-image/satellite-help /usr/local/bin/satellite-help
-ln -s -f /usr/local/src/companion-satellite/pi-image/satellite-update /usr/local/sbin/satellite-update
-ln -s -f /usr/local/src/companion-satellite/pi-image/satellite-edit-config /usr/local/sbin/satellite-edit-config
+ln -s -f /usr/local/src/companion-midi-satellite/pi-image/satellite-license /usr/local/bin/satellite-license
+ln -s -f /usr/local/src/companion-midi-satellite/pi-image/satellite-help /usr/local/bin/satellite-help
+ln -s -f /usr/local/src/companion-midi-satellite/pi-image/satellite-update /usr/local/sbin/satellite-update
+ln -s -f /usr/local/src/companion-midi-satellite/pi-image/satellite-edit-config /usr/local/sbin/satellite-edit-config
 
 # install the motd
-ln -s -f /usr/local/src/companion-satellite/pi-image/motd /etc/motd 
+ln -s -f /usr/local/src/companion-midi-satellite/pi-image/motd /etc/motd 

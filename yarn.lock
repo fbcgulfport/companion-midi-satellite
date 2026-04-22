@@ -3613,9 +3613,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"companion-satellite@workspace:.":
+"companion-midi-satellite@workspace:.":
   version: 0.0.0-use.local
-  resolution: "companion-satellite@workspace:."
+  resolution: "companion-midi-satellite@workspace:."
   dependencies:
     "@eslint/js": "npm:^10.0.1"
     "@sofie-automation/eslint-plugin": "npm:^0.2.1"

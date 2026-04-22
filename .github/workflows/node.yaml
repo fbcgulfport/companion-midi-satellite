@@ -65,8 +65,8 @@ jobs:
           COUNT=$(git rev-list --count HEAD)
           VERSION=$(node -e "console.log(require('./package.json').version)")
 
-          echo "sourcename=electron-output/companion-satellite-x64.tar.gz" >> $GITHUB_OUTPUT
-          echo "targetname=companion-satellite-x64-${COUNT}-${HASH}.tar.gz" >> $GITHUB_OUTPUT
+          echo "sourcename=electron-output/companion-midi-satellite-x64.tar.gz" >> $GITHUB_OUTPUT
+          echo "targetname=companion-midi-satellite-x64-${COUNT}-${HASH}.tar.gz" >> $GITHUB_OUTPUT
           echo "longversion=${VERSION}-${COUNT}+${HASH}" >> $GITHUB_OUTPUT
 
       - name: Run build
@@ -99,11 +99,11 @@ jobs:
           source-filename: ${{ steps.filenames.outputs.sourcename }}
           destination-filename: ${{ steps.filenames.outputs.targetname }}
           s3-host: ${{ secrets.S3_HOST }}
-          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-satellite
+          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-midi-satellite
           s3-access-key: ${{ secrets.S3_KEY }}
           s3-secret-key: ${{ secrets.S3_SECRET }}
 
-          api-product: companion-satellite
+          api-product: companion-midi-satellite
           api-target: 'linux-tgz'
           api-secret: ${{ secrets.BITFOCUS_API_PROJECT_SECRET }}
 
@@ -141,8 +141,8 @@ jobs:
           COUNT=$(git rev-list --count HEAD)
           VERSION=$(node -e "console.log(require('./package.json').version)")
 
-          echo "sourcename=electron-output/companion-satellite-arm64.tar.gz" >> $GITHUB_OUTPUT
-          echo "targetname=companion-satellite-arm64-${COUNT}-${HASH}.tar.gz" >> $GITHUB_OUTPUT
+          echo "sourcename=electron-output/companion-midi-satellite-arm64.tar.gz" >> $GITHUB_OUTPUT
+          echo "targetname=companion-midi-satellite-arm64-${COUNT}-${HASH}.tar.gz" >> $GITHUB_OUTPUT
           echo "longversion=${VERSION}-${COUNT}+${HASH}" >> $GITHUB_OUTPUT
 
       - name: Run build
@@ -175,11 +175,11 @@ jobs:
           source-filename: ${{ steps.filenames.outputs.sourcename }}
           destination-filename: ${{ steps.filenames.outputs.targetname }}
           s3-host: ${{ secrets.S3_HOST }}
-          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-satellite
+          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-midi-satellite
           s3-access-key: ${{ secrets.S3_KEY }}
           s3-secret-key: ${{ secrets.S3_SECRET }}
 
-          api-product: companion-satellite
+          api-product: companion-midi-satellite
           api-target: 'linux-arm64-tgz'
           api-secret: ${{ secrets.BITFOCUS_API_PROJECT_SECRET }}
 
@@ -217,8 +217,8 @@ jobs:
           COUNT=$(git rev-list --count HEAD)
           VERSION=$(node -e "console.log(require('./package.json').version)")
 
-          echo "sourcename=electron-output/companion-satellite-x64.exe" >> $GITHUB_OUTPUT
-          echo "targetname=companion-satellite-x64-${COUNT}-${HASH}.exe" >> $GITHUB_OUTPUT
+          echo "sourcename=electron-output/companion-midi-satellite-x64.exe" >> $GITHUB_OUTPUT
+          echo "targetname=companion-midi-satellite-x64-${COUNT}-${HASH}.exe" >> $GITHUB_OUTPUT
           echo "longversion=${VERSION}-${COUNT}+${HASH}" >> $GITHUB_OUTPUT
 
       - name: Run build
@@ -278,11 +278,11 @@ jobs:
           source-filename: ${{ steps.filenames.outputs.sourcename }}
           destination-filename: ${{ steps.filenames.outputs.targetname }}
           s3-host: ${{ secrets.S3_HOST }}
-          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-satellite
+          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-midi-satellite
           s3-access-key: ${{ secrets.S3_KEY }}
           s3-secret-key: ${{ secrets.S3_SECRET }}
 
-          api-product: companion-satellite
+          api-product: companion-midi-satellite
           api-target: 'win-x64'
           api-secret: ${{ secrets.BITFOCUS_API_PROJECT_SECRET }}
 
@@ -315,8 +315,8 @@ jobs:
           COUNT=$(git rev-list --count HEAD)
           VERSION=$(node -e "console.log(require('./package.json').version)")
 
-          echo "sourcename=electron-output/companion-satellite-x64.dmg" >> $GITHUB_OUTPUT
-          echo "targetname=companion-satellite-x64-${COUNT}-${HASH}.dmg" >> $GITHUB_OUTPUT
+          echo "sourcename=electron-output/companion-midi-satellite-x64.dmg" >> $GITHUB_OUTPUT
+          echo "targetname=companion-midi-satellite-x64-${COUNT}-${HASH}.dmg" >> $GITHUB_OUTPUT
           echo "longversion=${VERSION}-${COUNT}+${HASH}" >> $GITHUB_OUTPUT
 
       - name: Run build
@@ -356,11 +356,11 @@ jobs:
           source-filename: ${{ steps.filenames.outputs.sourcename }}
           destination-filename: ${{ steps.filenames.outputs.targetname }}
           s3-host: ${{ secrets.S3_HOST }}
-          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-satellite
+          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-midi-satellite
           s3-access-key: ${{ secrets.S3_KEY }}
           s3-secret-key: ${{ secrets.S3_SECRET }}
 
-          api-product: companion-satellite
+          api-product: companion-midi-satellite
           api-target: 'mac-intel'
           api-secret: ${{ secrets.BITFOCUS_API_PROJECT_SECRET }}
 
@@ -393,8 +393,8 @@ jobs:
           COUNT=$(git rev-list --count HEAD)
           VERSION=$(node -e "console.log(require('./package.json').version)")
 
-          echo "sourcename=electron-output/companion-satellite-arm64.dmg" >> $GITHUB_OUTPUT
-          echo "targetname=companion-satellite-arm64-${COUNT}-${HASH}.dmg" >> $GITHUB_OUTPUT
+          echo "sourcename=electron-output/companion-midi-satellite-arm64.dmg" >> $GITHUB_OUTPUT
+          echo "targetname=companion-midi-satellite-arm64-${COUNT}-${HASH}.dmg" >> $GITHUB_OUTPUT
           echo "longversion=${VERSION}-${COUNT}+${HASH}" >> $GITHUB_OUTPUT
 
       - name: Run build
@@ -434,11 +434,11 @@ jobs:
           source-filename: ${{ steps.filenames.outputs.sourcename }}
           destination-filename: ${{ steps.filenames.outputs.targetname }}
           s3-host: ${{ secrets.S3_HOST }}
-          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-satellite
+          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-midi-satellite
           s3-access-key: ${{ secrets.S3_KEY }}
           s3-secret-key: ${{ secrets.S3_SECRET }}
 
-          api-product: companion-satellite
+          api-product: companion-midi-satellite
           api-target: 'mac-arm'
           api-secret: ${{ secrets.BITFOCUS_API_PROJECT_SECRET }}
 
@@ -479,7 +479,7 @@ jobs:
           VERSION=$(node -e "console.log(require('./package.json').version)")
 
           echo "sourcename=pi-image/output-satellitepi/image.xz" >> $GITHUB_OUTPUT
-          echo "targetname=companion-satellite-pi-${COUNT}-${HASH}.img.xz" >> $GITHUB_OUTPUT
+          echo "targetname=companion-midi-satellite-pi-${COUNT}-${HASH}.img.xz" >> $GITHUB_OUTPUT
           echo "longversion=${VERSION}-${COUNT}+${HASH}" >> $GITHUB_OUTPUT
           echo "shortversion=v${VERSION}" >> $GITHUB_OUTPUT
 
@@ -539,10 +539,10 @@ jobs:
           source-filename: ${{ steps.filenames.outputs.sourcename }}
           destination-filename: ${{ steps.filenames.outputs.targetname }}
           s3-host: ${{ secrets.S3_HOST }}
-          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-satellite
+          s3-bucket: ${{ secrets.S3_BUCKET }}/companion-midi-satellite
           s3-access-key: ${{ secrets.S3_KEY }}
           s3-secret-key: ${{ secrets.S3_SECRET }}
 
-          api-product: companion-satellite
+          api-product: companion-midi-satellite
           api-target: 'linux-img'
           api-secret: ${{ secrets.BITFOCUS_API_PROJECT_SECRET }}
