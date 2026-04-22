@@ -76,7 +76,7 @@ const options: electronBuilder.Configuration = {
 		gatekeeperAssess: false,
 		entitlements: 'satellite/entitlements.mac.plist',
 		entitlementsInherit: 'satellite/entitlements.mac.plist',
-		icon: 'icon-macos-glass.icon',
+		icon: 'icon.png',
 		identity: process.env.CSC_LINK ? undefined : null, // Disable signing when CSC_LINK is not set
 	},
 	dmg: {
