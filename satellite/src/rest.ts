@@ -140,12 +140,32 @@ export class RestServer {
 		const port = this.appConfig.get('restPort')
 
 		if (enabled && port) {
-			try {
-				this.server = this.app.listen(port)
-				this.#logger.info(`REST server starting: port: ${port}`)
-			} catch (error) {
-				this.#logger.error(`Error starting REST server: ${error}`)
+			let usedFallback = false
+
+			const listen = (listenPort: number): void => {
+				try {
+					const server = this.app.listen(listenPort)
+					server.once('listening', () => {
+						this.server = server
+						this.#logger.info(`REST server starting: port: ${listenPort}`)
+					})
+					server.once('error', (error) => {
+						const isTaken = (error as NodeJS.ErrnoException)?.code === 'EADDRINUSE'
+						if (isTaken && !usedFallback && listenPort > 1) {
+							usedFallback = true
+							const fallbackPort = listenPort - 1
+							this.#logger.warn(`REST port ${listenPort} is in use. Retrying on ${fallbackPort}`)
+							listen(fallbackPort)
+							return
+						}
+						this.#logger.error(`Error starting REST server on port ${listenPort}: ${error}`)
+					})
+				} catch (error) {
+					this.#logger.error(`Error starting REST server on port ${listenPort}: ${error}`)
+				}
 			}
+
+			listen(port)
 		} else {
 			this.#logger.info('REST server not starting: disabled')
 		}
