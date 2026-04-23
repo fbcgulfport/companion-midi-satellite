@@ -3,7 +3,7 @@ import type { ApiStatusResponse } from '../Api/types.js'
 import { useQuery } from '@tanstack/react-query'
 import { CONNECTION_STATUS_QUERY_KEY } from './constants'
 import { JSX } from 'react'
-import { CheckCircle2, Loader2, AlertCircle, AlertTriangle, CircleOff } from 'lucide-react'
+import { CheckCircle2, Loader2, AlertCircle, AlertTriangle } from 'lucide-react'
 import { NonIdealState } from '@/components/NonIdealState'
 
 export function ConnectionStatus(): JSX.Element {
@@ -47,18 +47,6 @@ function ConnectionStatusData({ status }: { status: ApiStatusResponse }) {
 		)
 	}
 
-	if (!status.midiEnabled) {
-		return (
-			<NonIdealState
-				icon={CircleOff}
-				title="MIDI Button Pusher Disabled"
-				description="Enable MIDI Button Pusher in configuration"
-				iconClassName="h-12 w-12 text-slate-500"
-				titleClassName="text-lg text-slate-600 dark:text-slate-400"
-			/>
-		)
-	}
-
 	if (status.midiPortOpen) {
 		return (
 			<NonIdealState
@@ -75,7 +63,7 @@ function ConnectionStatusData({ status }: { status: ApiStatusResponse }) {
 		<NonIdealState
 			icon={AlertCircle}
 			title="MIDI Port Closed"
-			description={status.lastError ?? 'Enable MIDI and verify port name/type'}
+			description={status.lastError ?? 'Verify MIDI port name/type and sender routing'}
 			iconClassName="h-12 w-12 text-amber-500"
 			titleClassName="text-lg text-amber-600 dark:text-amber-400"
 		/>

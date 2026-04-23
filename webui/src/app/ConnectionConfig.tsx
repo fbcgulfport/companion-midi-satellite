@@ -103,21 +103,6 @@ function ConnectionConfigContent({ config }: { config: ApiConfigData }): JSX.Ele
 				<legend className="col-span-3 col-start-2 px-1">MIDI Button Pusher</legend>
 
 				<form.Field
-					name="midiEnabled"
-					children={(field) => (
-						<FormRow label="Enable MIDI" htmlFor={field.name}>
-							<Switch
-								id={field.name}
-								name={field.name}
-								checked={field.state.value}
-								onBlur={field.handleBlur}
-								onCheckedChange={(checked) => field.handleChange(checked)}
-							/>
-						</FormRow>
-					)}
-				/>
-
-				<form.Field
 					name="midiPortType"
 					children={(field) => (
 						<FormRow

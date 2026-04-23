@@ -79,15 +79,6 @@ export class RestServer {
 				partialConfig.companionPort = port
 			}
 
-			if (body.midiEnabled !== undefined) {
-				if (typeof body.midiEnabled !== 'boolean') {
-					ctx.status = 400
-					ctx.body = 'Invalid midiEnabled'
-					return
-				}
-				partialConfig.midiEnabled = body.midiEnabled
-			}
-
 			if (body.midiPortType !== undefined) {
 				if (body.midiPortType !== 'virtual' && body.midiPortType !== 'named') {
 					ctx.status = 400

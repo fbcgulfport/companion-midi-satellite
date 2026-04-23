@@ -10,7 +10,6 @@ export interface SatelliteConfig {
 	companionHost: string
 	companionPort: number
 
-	midiEnabled: boolean
 	midiPortType: 'virtual' | 'named'
 	midiPortName: string
 
@@ -32,11 +31,6 @@ export const satelliteConfigSchema: Schema<SatelliteConfig> = {
 		minimum: 1,
 		maximum: 65535,
 		default: 8000,
-	},
-	midiEnabled: {
-		type: 'boolean',
-		description: 'Enable MIDI button pusher',
-		default: false,
 	},
 	midiPortType: {
 		type: 'string',
@@ -109,7 +103,6 @@ export function getMidiPusherConfig(config: SatelliteConfigInstance): MidiPusher
 	return {
 		companionHost: config.get('companionHost') || '127.0.0.1',
 		companionPort: config.get('companionPort') || 8000,
-		midiEnabled: config.get('midiEnabled') || false,
 		midiPortType: config.get('midiPortType') || 'virtual',
 		midiPortName: config.get('midiPortName') || 'CompanionMidiSatellite',
 	}
@@ -120,7 +113,6 @@ export function listenToMidiConfigChanges(config: SatelliteConfigInstance, reloa
 
 	config.onDidChange('companionHost', debouncedReload)
 	config.onDidChange('companionPort', debouncedReload)
-	config.onDidChange('midiEnabled', debouncedReload)
 	config.onDidChange('midiPortType', debouncedReload)
 	config.onDidChange('midiPortName', debouncedReload)
 }

@@ -1,6 +1,5 @@
 export interface ApiStatusResponse {
 	midiAvailable: boolean
-	midiEnabled: boolean
 	midiPortOpen: boolean
 	midiPortType: 'virtual' | 'named'
 	midiPortName: string
@@ -12,7 +11,6 @@ export interface ApiStatusResponse {
 export interface ApiConfigData {
 	companionHost: string
 	companionPort: number
-	midiEnabled: boolean
 	midiPortType: 'virtual' | 'named'
 	midiPortName: string
 	runAtStartup: boolean

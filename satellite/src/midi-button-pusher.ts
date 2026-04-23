@@ -5,14 +5,12 @@ import type { Logger } from './logging.js'
 export interface MidiPusherConfig {
 	companionHost: string
 	companionPort: number
-	midiEnabled: boolean
 	midiPortType: 'virtual' | 'named'
 	midiPortName: string
 }
 
 export interface MidiPusherStatus {
 	midiAvailable: boolean
-	midiEnabled: boolean
 	midiPortOpen: boolean
 	midiPortType: 'virtual' | 'named'
 	midiPortName: string
@@ -29,7 +27,6 @@ export class MidiButtonPusher extends EventEmitter<MidiPusherEvents> {
 	#config: MidiPusherConfig = {
 		companionHost: '127.0.0.1',
 		companionPort: 8000,
-		midiEnabled: false,
 		midiPortType: 'virtual',
 		midiPortName: 'CompanionMidiSatellite',
 	}
@@ -69,11 +66,6 @@ export class MidiButtonPusher extends EventEmitter<MidiPusherEvents> {
 			}
 		}
 
-		if (!config.midiEnabled) {
-			this.#emitStatus()
-			return
-		}
-
 		try {
 			if (config.midiPortType === 'virtual') {
 				this.#logger.info(`Opening virtual midi port: ${config.midiPortName}`)
@@ -109,7 +101,6 @@ export class MidiButtonPusher extends EventEmitter<MidiPusherEvents> {
 	public getStatus(): MidiPusherStatus {
 		return {
 			midiAvailable: this.#midiAvailable,
-			midiEnabled: this.#config.midiEnabled,
 			midiPortOpen: this.#input?.isPortOpen() ?? false,
 			midiPortType: this.#config.midiPortType,
 			midiPortName: this.#config.midiPortName,
@@ -134,7 +125,6 @@ export class MidiButtonPusher extends EventEmitter<MidiPusherEvents> {
 	}
 
 	#handleMessage(deltaTime: number, message: number[]): void {
-		if (!this.#config.midiEnabled) return
 		if (message.length < 3) return
 
 		const midiMessageChannel = message[0] & 0x0f
