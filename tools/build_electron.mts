@@ -50,6 +50,8 @@ const builtinSurfaceCacheDir = await fetchBuiltinSurfaceModules()
 // perform the electron build
 await fs.remove('./electron-output')
 
+const shouldSign = !!process.env.CSC_LINK
+
 const options: electronBuilder.Configuration = {
 	publish: [
 		{
@@ -72,12 +74,12 @@ const options: electronBuilder.Configuration = {
 			LSBackgroundOnly: 1,
 			LSUIElement: 1,
 		},
-		hardenedRuntime: true,
+		hardenedRuntime: shouldSign,
 		gatekeeperAssess: false,
-		entitlements: 'satellite/entitlements.mac.plist',
-		entitlementsInherit: 'satellite/entitlements.mac.plist',
+		entitlements: shouldSign ? 'satellite/entitlements.mac.plist' : undefined,
+		entitlementsInherit: shouldSign ? 'satellite/entitlements.mac.plist' : undefined,
 		icon: 'icon.png',
-		identity: process.env.CSC_LINK ? undefined : null, // Disable signing when CSC_LINK is not set
+		identity: shouldSign ? undefined : '-', // Use ad-hoc signing when CSC_LINK is not set
 	},
 	dmg: {
 		artifactName: 'companion-midi-satellite-${arch}.dmg',
