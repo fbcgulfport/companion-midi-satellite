@@ -31,6 +31,7 @@ export class MidiButtonPusher extends EventEmitter<MidiPusherEvents> {
 		midiPortName: 'CompanionMidiSatellite',
 	}
 	#midiAvailable = true
+	#midiPortOpen = false
 	#lastError: string | null = null
 
 	constructor(logger: Logger) {
@@ -54,16 +55,18 @@ export class MidiButtonPusher extends EventEmitter<MidiPusherEvents> {
 		this.#lastError = null
 
 		if (!this.#midiAvailable || !this.#input) {
+			this.#midiPortOpen = false
 			this.#emitStatus()
 			return
 		}
 
-		if (this.#input.isPortOpen()) {
+		if (this.#midiPortOpen) {
 			try {
 				this.#input.closePort()
 			} catch (error) {
 				this.#logger.warn(`Error closing midi port: ${error}`)
 			}
+			this.#midiPortOpen = false
 		}
 
 		try {
@@ -74,9 +77,11 @@ export class MidiButtonPusher extends EventEmitter<MidiPusherEvents> {
 				this.#logger.info(`Opening midi port by name: ${config.midiPortName}`)
 				this.#input.openPortByName(config.midiPortName)
 			}
+			this.#midiPortOpen = true
 		} catch (error) {
 			this.#lastError = `Error opening midi port: ${error}`
 			this.#logger.error(this.#lastError)
+			this.#midiPortOpen = false
 		}
 
 		this.#emitStatus()
@@ -101,7 +106,7 @@ export class MidiButtonPusher extends EventEmitter<MidiPusherEvents> {
 	public getStatus(): MidiPusherStatus {
 		return {
 			midiAvailable: this.#midiAvailable,
-			midiPortOpen: this.#input?.isPortOpen() ?? false,
+			midiPortOpen: this.#midiPortOpen,
 			midiPortType: this.#config.midiPortType,
 			midiPortName: this.#config.midiPortName,
 			lastError: this.#lastError,
@@ -109,13 +114,14 @@ export class MidiButtonPusher extends EventEmitter<MidiPusherEvents> {
 	}
 
 	public close(): void {
-		if (!this.#input?.isPortOpen()) return
+		if (!this.#input || !this.#midiPortOpen) return
 
 		try {
 			this.#input.closePort()
 		} catch (error) {
 			this.#logger.warn(`Error closing midi port: ${error}`)
 		}
+		this.#midiPortOpen = false
 
 		this.#emitStatus()
 	}
